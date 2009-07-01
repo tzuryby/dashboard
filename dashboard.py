@@ -119,13 +119,12 @@ class SyncHashObserver(object):
 manLoop = True
 
 def dataManipulationLoop(hashServer, port):
-    #if port == 4000:
     time.sleep(3)
     while manLoop:
         hashServer.hashTable[time.time()] = port        
         time.sleep(3)
         
-    print 'goodbye manipulation'
+    print 'exiting manipulation loop'
         
     
 def stop(*args):
