@@ -1,13 +1,18 @@
-import time, sys, socket, signal,exceptions
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+
+__author__ = 'Tzury Bar Yochay <tzury.by@reguluslabs.com>'
+__version__ = '0.1'
+__license__ = 'GPLv3'
+
+import time, sys, socket, signal,exceptions, cPickle
+from socket import *
+
 from threading import Thread
 
-import cPickle
-
-from twisted.internet.protocol import DatagramProtocol, ServerFactory, ClientCreator
+from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
-
-import socket
-from socket import *
 
 def sendDatagram(host, port, datagram):
     s = socket(AF_INET,SOCK_DGRAM)
