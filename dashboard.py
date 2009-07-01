@@ -157,6 +157,6 @@ if __name__ == '__main__':
 '''
 to test this module open two terminals 
 and type the following lines
-terminal a: python udphash.py 4001 4000
-terminal b: python udphash.py 4000 4001
+terminal a: python dashboard.py 4001 4000
+terminal b: python dashboard.py 4000 4001
 '''
