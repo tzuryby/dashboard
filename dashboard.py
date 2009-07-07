@@ -41,6 +41,7 @@ class SynchStorage(dict):
         ''' del self item and tell others '''
         try:
             self.delCallback(key)
+            print 'sent deleted key %s' % (key)
             super(SynchStorage, self).__delitem__(key)
         except exceptions.KeyError:
             pass
@@ -48,41 +49,44 @@ class SynchStorage(dict):
     def __setitem__(self, key, value):
         ''' udpate self item and tell others '''
         self.setCallback(key, value)
+        print 'sent {%s: %s}' % (key, value)
         super(SynchStorage, self).__setitem__(key, value)
         
     def delitem(self, key):
         '''this method called when getting delete form the network'''
         try:
+            print 'got deleted key %s' % (key)
             super(SynchStorage, self).__delitem__(key)
         except exceptions.KeyError:
             pass
             
     def setitem(self, key, value):
         '''this method called when getting update form the network'''
+        print 'got {%s: %s}' % (key, value)
         super(SynchStorage, self).__setitem__(key, value)
         
 class SyncHashProtocol(DatagramProtocol):
-    deleteCallBack = None
-    updateCallBack = None
+    deleteCallBack = lambda key: None
+    updateCallBack = lambda key, value: None
     
     def datagramReceived(self, data, (host, port)):
         self.pareRequest(data)
         
     def pareRequest(self, request):
-        if request.startswith('delete:'):
-            self._delItem(request[7:])
-        else:
-            p = cPickle.loads(request)
+        p = cPickle.loads(request)
+        # dict means update
+        if isinstance(p, dict):
             for k, v in p.iteritems():
                 self._setItem(k,v)
+        # anything else treated as keys and means delete
+        else:
+            self._delItem(p)
             
     def _delItem(self, key):
-        if self.deleteCallBack and hasattr(self.deleteCallBack, '__call__'):
-            self.deleteCallBack(key)
+        self.deleteCallBack(key)
         
     def _setItem(self, key, value):
-        if self.updateCallBack and hasattr(self.updateCallBack, '__call__'):
-            self.updateCallBack(key, value)
+        self.updateCallBack(key, value)
             
 class SyncHashObserver(object):
     def __init__(self, otherServers):
@@ -103,36 +107,33 @@ class SyncHashObserver(object):
             sendDatagram(host, port, data)
     
     def onUpdate(self, key, value):
-        p = {key: value}
-        self.sendAll(cPickle.dumps(p))
+        self.sendAll(cPickle.dumps({key: value}))
         
     def onDelete(self, key):
-        self.sendAll('delete:' + key)
+        self.sendAll(cPickle.dumps(key))
         
     def selfDelete(self, key):
         self.hashTable.delitem(key)
         
     def selfUpdate(self, key, value):
         self.hashTable.setitem(key, value)
-        print self.hashTable
         
-manLoop = True
 
-def dataManipulationLoop(hashServer, port):
+dummyLoop = True
+
+def dataManipulationLoop(hashServer, port):    
     time.sleep(3)
-    while manLoop:
-        hashServer.hashTable[time.time()] = port        
-        time.sleep(3)
-        
-    print 'exiting manipulation loop'
-        
+    while dummyLoop:
+        key = time.time()
+        hashServer.hashTable[key] = port
+        if int(key) % 7 == 0:
+            del hashServer.hashTable[key]
+        time.sleep(1.8)
     
 def stop(*args):
-    global manLoop
-    print 'stopping all this noise'
+    global dummyLoop
+    dummyLoop = False
     reactor.stop()
-    print 'reactor stopped'
-    manLoop = False
     
 if __name__ == '__main__':
     try:
